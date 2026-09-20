@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Security & Entropy Analyzer | DecodeLabs</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 950: '#0b0f19', 900: '#111827', 800: '#1e293b' },
+                        brand: { cyan: '#06b6d4', indigo: '#6366f1' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Glassmorphism Light vs Dark Mode */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+        }
+        .glow-effect {
+            box-shadow: 0 0 30px -5px rgba(6, 182, 212, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans min-h-screen selection:bg-cyan-500 selection:text-slate-950 transition-colors duration-300">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 rounded-lg bg-cyan-500/10 dark:bg-gradient-to-tr dark:from-cyan-500/20 dark:to-indigo-500/20 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Password Security Analyzer</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">DecodeLabs • Industrial Training Kit</p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center space-x-3">
+                <!-- Dark/Light Theme Switcher Button -->
+                <button onclick="toggleTheme()" id="theme-toggle-btn" class="px-3 py-1.5 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all flex items-center space-x-2 text-xs font-medium border border-slate-300/70 dark:border-slate-700">
+                    <i id="theme-icon" data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+                    <span id="theme-text">Light Mode</span>
+                </button>
+
+                <!-- Status Indicator -->
+                <div class="hidden sm:flex items-center space-x-2 text-xs font-mono text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/50 px-3 py-1.5 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
+                    <span>ENTROPY EVALUATOR READY</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+
+        <!-- Input Area -->
+        <div class="glass-card rounded-2xl p-6 glow-effect space-y-4">
+            <div class="flex items-center justify-between">
+                <label for="password-input" class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                    <i data-lucide="key-round" class="w-4 h-4 text-cyan-500 dark:text-cyan-400"></i>
+                    <span>Target Password Input</span>
+                </label>
+                <button onclick="toggleVisibility()" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors flex items-center space-x-1">
+                    <i id="vis-icon" data-lucide="eye" class="w-3.5 h-3.5"></i>
+                    <span id="vis-text">Show</span>
+                </button>
+            </div>
+
+            <div class="relative">
+                <input type="password" id="password-input" oninput="analyzePassword()" placeholder="Enter password to evaluate..." class="w-full bg-white dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3.5 text-base font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-all pr-12 shadow-sm dark:shadow-none">
+            </div>
+
+            <!-- Strength Meter Bar -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center text-xs font-mono">
+                    <span class="text-slate-500 dark:text-slate-400">Strength Rating:</span>
+                    <span id="strength-label" class="font-semibold text-slate-400 dark:text-slate-500">None</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300/50 dark:border-slate-800">
+                    <div id="strength-bar" class="h-full w-0 bg-slate-400 dark:bg-slate-700 transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Entropy Score -->
+            <div class="glass-card rounded-xl p-5 space-y-2">
+                <div class="flex items-center space-x-2 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                    <i data-lucide="binary" class="w-4 h-4 text-indigo-500 dark:text-indigo-400"></i>
+                    <span>Information Entropy</span>
+                </div>
+                <div id="entropy-value" class="text-2xl font-mono font-bold text-slate-800 dark:text-slate-200">0.0 <span class="text-xs font-normal text-slate-500">bits</span></div>
+                <p class="text-xs text-slate-500">Calculated using $H = L \cdot \log_2(R)$</p>
+            </div>
+
+            <!-- Estimated Crack Time -->
+            <div class="glass-card rounded-xl p-5 space-y-2">
+                <div class="flex items-center space-x-2 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                    <i data-lucide="clock" class="w-4 h-4 text-cyan-500 dark:text-cyan-400"></i>
+                    <span>Offline Crack Time</span>
+                </div>
+                <div id="crack-time" class="text-2xl font-mono font-bold text-slate-800 dark:text-slate-200">Instant</div>
+                <p class="text-xs text-slate-500">Based on $10^{10}$ guesses/sec (GPU array)</p>
+            </div>
+
+            <!-- Pool Size -->
+            <div class="glass-card rounded-xl p-5 space-y-2">
+                <div class="flex items-center space-x-2 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                    <i data-lucide="layers" class="w-4 h-4 text-amber-500 dark:text-amber-400"></i>
+                    <span>Character Pool (R)</span>
+                </div>
+                <div id="pool-size" class="text-2xl font-mono font-bold text-slate-800 dark:text-slate-200">0 <span class="text-xs font-normal text-slate-500">chars</span></div>
+                <p class="text-xs text-slate-500">Active character set size</p>
+            </div>
+        </div>
+
+        <!-- Character Distribution Criteria Checklist -->
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Character Set Requirements</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs font-mono">
+                <div id="crit-len" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex items-center space-x-2">
+                    <i data-lucide="circle-x" class="w-4 h-4 text-slate-400 dark:text-slate-600"></i>
+                    <span>≥ 12 Chars</span>
+                </div>
+                <div id="crit-lower" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex items-center space-x-2">
+                    <i data-lucide="circle-x" class="w-4 h-4 text-slate-400 dark:text-slate-600"></i>
+                    <span>Lowercase (a-z)</span>
+                </div>
+                <div id="crit-upper" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex items-center space-x-2">
+                    <i data-lucide="circle-x" class="w-4 h-4 text-slate-400 dark:text-slate-600"></i>
+                    <span>Uppercase (A-Z)</span>
+                </div>
+                <div id="crit-num" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex items-center space-x-2">
+                    <i data-lucide="circle-x" class="w-4 h-4 text-slate-400 dark:text-slate-600"></i>
+                    <span>Digits (0-9)</span>
+                </div>
+                <div id="crit-sym" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex items-center space-x-2">
+                    <i data-lucide="circle-x" class="w-4 h-4 text-slate-400 dark:text-slate-600"></i>
+                    <span>Symbols (!@#$)</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Theme Toggle Logic with LocalStorage
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                themeText.innerText = 'Dark Mode';
+                themeIcon.setAttribute('data-lucide', 'moon');
+                themeIcon.className = 'w-4 h-4 text-indigo-600';
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                themeText.innerText = 'Light Mode';
+                themeIcon.setAttribute('data-lucide', 'sun');
+                themeIcon.className = 'w-4 h-4 text-amber-500';
+            }
+            lucide.createIcons();
+        }
+
+        // Initialize saved theme or default to dark
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+
+            if (savedTheme === 'light') {
+                html.classList.remove('dark');
+                themeText.innerText = 'Dark Mode';
+                themeIcon.setAttribute('data-lucide', 'moon');
+                themeIcon.className = 'w-4 h-4 text-indigo-600';
+            } else {
+                html.classList.add('dark');
+                themeText.innerText = 'Light Mode';
+                themeIcon.setAttribute('data-lucide', 'sun');
+                themeIcon.className = 'w-4 h-4 text-amber-500';
+            }
+        }
+
+        function toggleVisibility() {
+            const input = document.getElementById('password-input');
+            const visText = document.getElementById('vis-text');
+            if (input.type === 'password') {
+                input.type = 'text';
+                visText.innerText = 'Hide';
+            } else {
+                input.type = 'password';
+                visText.innerText = 'Show';
+            }
+        }
+
+        function analyzePassword() {
+            const pwd = document.getElementById('password-input').value;
+            
+            const hasLower = /[a-z]/.test(pwd);
+            const hasUpper = /[A-Z]/.test(pwd);
+            const hasNum = /[0-9]/.test(pwd);
+            const hasSym = /[^a-zA-Z0-9]/.test(pwd);
+            const isLong = pwd.length >= 12;
+
+            updateCriterion('crit-len', isLong);
+            updateCriterion('crit-lower', hasLower);
+            updateCriterion('crit-upper', hasUpper);
+            updateCriterion('crit-num', hasNum);
+            updateCriterion('crit-sym', hasSym);
+
+            let pool = 0;
+            if (hasLower) pool += 26;
+            if (hasUpper) pool += 26;
+            if (hasNum) pool += 10;
+            if (hasSym) pool += 32;
+
+            document.getElementById('pool-size').innerText = `${pool} chars`;
+
+            let entropy = 0;
+            if (pwd.length > 0 && pool > 0) {
+                entropy = pwd.length * Math.log2(pool);
+            }
+            document.getElementById('entropy-value').innerHTML = `${entropy.toFixed(1)} <span class="text-xs font-normal text-slate-500">bits</span>`;
+
+            updateStrengthBar(entropy, pwd.length);
+            updateCrackTime(entropy);
+        }
+
+        function updateCriterion(id, passed) {
+            const el = document.getElementById(id);
+            if (passed) {
+                el.className = "p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 flex items-center space-x-2";
+                el.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 dark:text-emerald-400"></i><span>${el.innerText}</span>`;
+            } else {
+                el.className = "p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex items-center space-x-2";
+                el.innerHTML = `<i data-lucide="circle-x" class="w-4 h-4 text-slate-400 dark:text-slate-600"></i><span>${el.innerText}</span>`;
+            }
+            lucide.createIcons();
+        }
+
+        function updateStrengthBar(entropy, length) {
+            const bar = document.getElementById('strength-bar');
+            const label = document.getElementById('strength-label');
+
+            if (length === 0) {
+                bar.style.width = '0%';
+                label.innerText = 'None';
+                label.className = 'font-semibold text-slate-400 dark:text-slate-500';
+                return;
+            }
+
+            if (entropy < 28) {
+                bar.style.width = '20%';
+                bar.className = 'h-full bg-rose-500 transition-all duration-300';
+                label.innerText = 'Very Weak';
+                label.className = 'font-semibold text-rose-500 dark:text-rose-400';
+            } else if (entropy < 36) {
+                bar.style.width = '40%';
+                bar.className = 'h-full bg-orange-500 transition-all duration-300';
+                label.innerText = 'Weak';
+                label.className = 'font-semibold text-orange-500 dark:text-orange-400';
+            } else if (entropy < 60) {
+                bar.style.width = '60%';
+                bar.className = 'h-full bg-amber-500 transition-all duration-300';
+                label.innerText = 'Moderate';
+                label.className = 'font-semibold text-amber-600 dark:text-amber-400';
+            } else if (entropy < 80) {
+                bar.style.width = '80%';
+                bar.className = 'h-full bg-cyan-500 transition-all duration-300';
+                label.innerText = 'Strong';
+                label.className = 'font-semibold text-cyan-600 dark:text-cyan-400';
+            } else {
+                bar.style.width = '100%';
+                bar.className = 'h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300';
+                label.innerText = 'Very Strong';
+                label.className = 'font-semibold text-emerald-600 dark:text-emerald-400';
+            }
+        }
+
+        function updateCrackTime(entropy) {
+            const el = document.getElementById('crack-time');
+            if (entropy === 0) {
+                el.innerText = 'Instant';
+                return;
+            }
+
+            const combinations = Math.pow(2, entropy);
+            const guessesPerSec = 1e10; // 10 billion hashes/sec
+            const seconds = combinations / guessesPerSec;
+
+            if (seconds < 1) el.innerText = 'Instant';
+            else if (seconds < 60) el.innerText = `${Math.round(seconds)} seconds`;
+            else if (seconds < 3600) el.innerText = `${Math.round(seconds / 60)} minutes`;
+            else if (seconds < 86400) el.innerText = `${Math.round(seconds / 3600)} hours`;
+            else if (seconds < 31536000) el.innerText = `${Math.round(seconds / 86400)} days`;
+            else if (seconds < 31536000000) el.innerText = `${Math.round(seconds / 31536000)} years`;
+            else el.innerText = 'Centuries';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
